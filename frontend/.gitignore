@@ -1,0 +1,47 @@
+node_modules/
+
+# Build files
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Editor & System files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Cache
+.cache/
+.next/
+out/
+
+# Tailwind CSS generated files
+.tailwind*
+
+# Sass cache files
+*.css.map
+
+# TypeScript build files
+*.tsbuildinfo
+
+# Jest coverage
+coverage/
+
+# Storybook
+.storybook-out/
+
+# Misc
+*.lock

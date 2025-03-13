@@ -90,12 +90,40 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
     def _sync_user_to_ldap(self, user):
-        """Sincroniza los datos del usuario con el servidor LDAP."""
-        # TODO: Implementar la lógica real de sincronización LDAP
-        # Este es un marcador de posición para la implementación real de la sincronización LDAP
-        # server = Server(settings.LDAP_SERVER, get_info=ALL)
-        # conn = Connection(server, settings.LDAP_BIND_DN, settings.LDAP_BIND_PASSWORD)
-        
-        # Actualizar marca de tiempo de última sincronización
-        user.last_ldap_sync = timezone.now()
-        user.save(update_fields=['last_ldap_sync'])
+        """Sincroniza los datos del usuario con LDAP"""
+        if not user.is_ldap_user:
+            return
+
+        ldap = LDAPManager()
+        try:
+            # Conectar con credenciales de administrador (debe estar configurado en settings)
+            if not ldap.connect(settings.LDAP_ADMIN_USERNAME, settings.LDAP_ADMIN_PASSWORD):
+                raise Exception('Error al conectar con LDAP usando credenciales de administrador')
+
+            # Preparar atributos del usuario
+            attributes = {
+                'sAMAccountName': user.username,
+                'mail': user.email,
+                'givenName': user.first_name,
+                'sn': user.last_name,
+                'description': user.department,
+                'mailQuota': str(user.email_quota),
+                'identification': user.identification,
+                'serviceInternet': 'enable' if user.service_internet else 'disable',
+                'serviceMail': 'enable' if user.service_mail else 'disable'
+            }
+
+            # Añadir o modificar usuario en LDAP
+            if user.ldap_dn:
+                ldap.modify_user(user.ldap_dn, attributes)
+            else:
+                # Crear nueva entrada LDAP
+                new_dn = f'CN={user.username},{settings.LDAP_BASE_DN}'
+                ldap.add_user(new_dn, attributes)
+                user.ldap_dn = new_dn
+
+            user.last_ldap_sync = timezone.now()
+            user.save()
+
+        finally:
+            ldap.disconnect()
